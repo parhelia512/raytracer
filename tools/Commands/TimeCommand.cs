@@ -60,14 +60,21 @@ namespace Tools.Commands
             int iterations = 2,
             string format = "text",
             string output = "",
-            int timeout = 60)
+            int timeout = 60,
+            string skip = "")
         {
             baseDirectory = Directory.GetCurrentDirectory();
             var document = ProjectDocument.Load();
             var results = new List<ProjectBenchmarkResult>();
+            var skippedProjects = ParseProjectList(skip);
 
             foreach (var project in document.Projects)
             {
+                if (skippedProjects.Contains(project.Path))
+                {
+                    continue;
+                }
+
                 var command = project.Commands.FirstOrDefault(x => string.Compare(x.Name, "default", true) == 0);
                 if (command == null)
                 {
@@ -388,6 +395,15 @@ namespace Tools.Commands
         private static string EscapeTableCell(string value)
         {
             return (value ?? "").Replace("|", "\\|").Replace("\r", " ").Replace("\n", " ");
+        }
+
+        private static HashSet<string> ParseProjectList(string value)
+        {
+            return new HashSet<string>(
+                (value ?? "")
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(x => x.Trim()),
+                StringComparer.OrdinalIgnoreCase);
         }
 
         private static string FormatOptionalNumber(double? value)

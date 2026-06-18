@@ -126,7 +126,7 @@
                 <Run Process="RayTracer.exe"/>
             </Platform>
             <Platform Name="Linux">
-                <Build Process="dmd" Arguments="RayTracer.d -m64 -O -inline -release -noboundscheck -of=RayTracer" />
+                <Build Process="ldc2" Arguments="RayTracer.d -O3 -release -boundscheck=off -of=RayTracer" />
                 <Run Process="./RayTracer"/>
             </Platform>
         </Command>

@@ -62,6 +62,7 @@ The benchmark runner also accepts shared render settings and emits a stable summ
   ray time javascript --output render.bmp
   ray time-all --width 320 --height 240 --iterations 2 --format text
   ray time-all --width 320 --height 240 --iterations 2 --format json --timeout 60
+  ray time-all --skip swift,rust
 ```
 
 Supported runner options:
@@ -80,7 +81,9 @@ option is per project and defaults to 60 seconds. Text output is a Markdown
 table sorted best-to-worst by the sample-reported warm render time, then peak
 memory, so it can be copied into the README. Process timing is still included
 as a separate column to show startup/runtime overhead. The text table displays
-language names; JSON keeps project folder names for automation.
+language names; JSON keeps project folder names for automation. Use `--skip`
+with a comma-separated list of project folder names when a compiler is not
+available in the current environment.
 
 Samples should accept `--width`, `--height`, and `--output`, then print one render line in this form:
 
@@ -89,4 +92,22 @@ render time_ms=123 width=500 height=500 output="sample.bmp"
 ```
 
 The `time` command wraps every sample with process-level timing and peak memory data, so older samples can still be benchmarked while ports are updated to the shared CLI contract.
+
+## Docker
+
+The Docker image installs the ray tool and most Linux toolchains needed by
+`projects.xml`.
+
+```cmd
+  docker build -t raytracer-bench .
+  docker run --rm raytracer-bench
+  docker run --rm raytracer-bench time-all --width 800 --height 600 --iterations 3 --format text --timeout 120 --skip swift
+  docker run --rm raytracer-bench time-all --width 800 --height 600 --iterations 3 --format json --timeout 120 --skip swift
+```
+
+The image currently targets the common Linux set: .NET, C, C++, D/LDC,
+Fortran, Go, Haskell, Java, JavaScript, Julia, Nim, PHP, Python, Ruby, Rust,
+Scala, TypeScript, Crystal, Zig, and V. Swift is not included yet because the
+official Linux setup is better handled as a separate Swift-based image or a
+later multi-stage image.
 
