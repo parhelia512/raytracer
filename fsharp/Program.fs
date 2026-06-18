@@ -289,13 +289,34 @@ type Renderer(scene: Scene, maxDepth: int) =
 
 [<EntryPoint>]
 let main argv =
+    let mutable width = 500
+    let mutable height = 500
+    let mutable output = "fs-raytracer.bmp"
+    let mutable i = 0
+
+    while i < argv.Length do
+        let name = argv.[i]
+        let value = if i + 1 < argv.Length then argv.[i + 1] else ""
+
+        if name = "--width" && value <> "" then
+            width <- Int32.Parse(value)
+            i <- i + 1
+        elif name = "--height" && value <> "" then
+            height <- Int32.Parse(value)
+            i <- i + 1
+        elif name = "--output" && value <> "" then
+            output <- value
+            i <- i + 1
+
+        i <- i + 1
+
     let sw = new System.Diagnostics.Stopwatch()
     sw.Start()
     let scene = Scene()
-    let image = Image(500, 500)
+    let image = Image(width, height)
     let renderr = new Renderer(scene, 5)
     renderr.Render(image)
     sw.Stop()
-    let _ = SaveImage("fs-raytracer.bmp", image)
-    printfn "Completed in %d ms" sw.ElapsedMilliseconds
+    let _ = SaveImage(output, image)
+    printfn "render time_ms=%d width=%d height=%d output=\"%s\"" sw.ElapsedMilliseconds width height output
     0

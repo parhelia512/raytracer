@@ -473,15 +473,52 @@ final class Image
     }
 }
 
+struct BenchmarkOptions
+{
+    int width = 500;
+    int height = 500;
+    string output = "d-raytracer.bmp";
+}
+
+BenchmarkOptions parseBenchmarkOptions(string[] argv)
+{
+    BenchmarkOptions options;
+
+    for (int i = 1; i < argv.length; i++)
+    {
+        auto name = argv[i];
+        auto value = i + 1 < argv.length ? argv[i + 1] : "";
+
+        if (name == "--width" && value.length > 0)
+        {
+            options.width = to!int(value);
+            i++;
+        }
+        else if (name == "--height" && value.length > 0)
+        {
+            options.height = to!int(value);
+            i++;
+        }
+        else if (name == "--output" && value.length > 0)
+        {
+            options.output = value;
+            i++;
+        }
+    }
+
+    return options;
+}
+
 void main(string[] argv)
 {
+    auto options = parseBenchmarkOptions(argv);
     StopWatch sw;
     sw.start();
-    Image image = new Image(500, 500);
+    Image image = new Image(options.width, options.height);
     Scene scene = new Scene();
     RayTracerEngine rayTracer = new RayTracerEngine();
     rayTracer.render(scene, image);
     sw.stop();
-    writeln("Completed in: ", sw.peek.total!"msecs", " ms");
-    image.save("d-raytracer.bmp");
+    writeln("render time_ms=", sw.peek.total!"msecs", " width=", options.width, " height=", options.height, " output=\"", options.output, "\"");
+    image.save(options.output);
 }

@@ -469,7 +469,7 @@ contains
         do y = 0 , h - 1
             index = y * stride
             do  x = 0 , w - 1
-                ray%dir = GetPoint(x, y, scene%camera, h, w)
+                ray%dir = GetPoint(x, y, scene%camera, w, h)
                 color = TraceRay(ray, scene, 0)
                 bitmapData(index + x + 1) = ColorToRGB(color)
             end do
@@ -495,10 +495,11 @@ contains
         camera%up = upNorm * 1.5d+0
     end function
 
-    subroutine SaveRGBBitmap(image, lWidth, lHeight)
+    subroutine SaveRGBBitmap(image, lWidth, lHeight, fileName)
         type(BmpInfoHeader) :: infoHeader
         type(BmpFileHeader) :: fileHeader
         integer :: lWidth, lHeight
+        character(len=*), intent(in) :: fileName
         type(TColorRGB), dimension(:), intent(in) :: image
 
         infoHeader%biSize = 40
@@ -515,7 +516,7 @@ contains
         fileHeader%bfOffBits = 54
         fileHeader%bfSize    = fileHeader%bfOffBits + infoHeader%biSizeImage
 
-        open (unit = 1, file = 'RayTracer.bmp', status = 'unknown', access = 'STREAM')
+        open (unit = 1, file = trim(fileName), status = 'unknown', access = 'STREAM')
         write (1) fileHeader
         write (1) infoHeader
         write (1) image
@@ -530,8 +531,38 @@ program RayTracerProgram
 
     real :: timeStart, timeEnd
     type(TScene)   :: scene
-    type(TColorRGB), dimension(:) :: bitmap(500 * 500)
+    type(TColorRGB), dimension(:), allocatable :: bitmap
+    integer :: width, height, stride
+    integer :: i, argCount
+    character(len=256) :: arg, value, output
 
+    width = 500
+    height = 500
+    output = 'fortran-raytracer.bmp'
+
+    argCount = command_argument_count()
+    i = 1
+    do while (i <= argCount)
+        call get_command_argument(i, arg)
+        value = ''
+        if (i + 1 <= argCount) call get_command_argument(i + 1, value)
+
+        if (trim(arg) == '--width' .and. len_trim(value) > 0) then
+            read(value, *) width
+            i = i + 1
+        else if (trim(arg) == '--height' .and. len_trim(value) > 0) then
+            read(value, *) height
+            i = i + 1
+        else if (trim(arg) == '--output' .and. len_trim(value) > 0) then
+            output = value
+            i = i + 1
+        end if
+
+        i = i + 1
+    end do
+
+    stride = width
+    allocate(bitmap(width * height))
 
     call cpu_time(timeStart)
 
@@ -550,16 +581,18 @@ program RayTracerProgram
 
     scene%camera    = CreateCamera(TVector(3.0, 2.0, 4.0), TVector(-1.0, 0.5, 0.0))
 
-    call RenderScene(scene, bitmap, 500, 500, 500)
+    call RenderScene(scene, bitmap, stride, width, height)
 
     deallocate(scene%things)
     deallocate(scene%lights)
 
     call cpu_time(timeEnd)
 
-    print '("Render time: ",f8.2," ms.")', (timeEnd - timeStart) * 1000
+    print '("render time_ms=",f0.4," width=",i0," height=",i0," output=""",a,"""")', &
+        (timeEnd - timeStart) * 1000, width, height, trim(output)
 
 
-    call SaveRGBBitmap(bitmap, 500, 500)
+    call SaveRGBBitmap(bitmap, width, height, output)
+    deallocate(bitmap)
 
 end program

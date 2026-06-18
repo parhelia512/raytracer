@@ -8,6 +8,7 @@ import "image/color"
 import "image/png"
 import "bufio"
 import "os"
+import "strconv"
 
 type Vector struct {
 	x float64
@@ -119,10 +120,11 @@ func init() {
 }
 
 func main() {
+	options := parseBenchmarkOptions()
 	start := time.Now()
 
-	width := 500
-	height := 500
+	width := options.width
+	height := options.height
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
 
 	var scene = CreateDefaultScene()
@@ -132,14 +134,50 @@ func main() {
 
 	elapsed := time.Since(start)
 
-	var file, _ = os.Create("go-raytracer.png")
+	var file, _ = os.Create(options.output)
 	var writer = bufio.NewWriter(file)
 
 	png.Encode(writer, img)
 
 	writer.Flush()
 
-	fmt.Printf("Completed in %s\n", elapsed)
+	fmt.Printf("render time_ms=%.4f width=%d height=%d output=\"%s\"\n", float64(elapsed.Nanoseconds())/1000000.0, width, height, options.output)
+}
+
+type BenchmarkOptions struct {
+	width  int
+	height int
+	output string
+}
+
+func parseBenchmarkOptions() BenchmarkOptions {
+	options := BenchmarkOptions{width: 500, height: 500, output: "go-raytracer.png"}
+	args := os.Args[1:]
+
+	for i := 0; i < len(args); i++ {
+		name := args[i]
+		value := ""
+		if i+1 < len(args) {
+			value = args[i+1]
+		}
+
+		if name == "--width" && value != "" {
+			if width, err := strconv.Atoi(value); err == nil {
+				options.width = width
+			}
+			i++
+		} else if name == "--height" && value != "" {
+			if height, err := strconv.Atoi(value); err == nil {
+				options.height = height
+			}
+			i++
+		} else if name == "--output" && value != "" {
+			options.output = value
+			i++
+		}
+	}
+
+	return options
 }
 
 type Camera struct {

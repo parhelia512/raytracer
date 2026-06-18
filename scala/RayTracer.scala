@@ -3,19 +3,51 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.util.ArrayList
 import java.util.List
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 import scala.beans.{BeanProperty, BooleanBeanProperty}
 
 object RayTracer {
   def main(args: Array[String]): Unit = {
+    val options = BenchmarkOptions.parse(args)
     val start: Long = System.nanoTime()
-    val image: Image = new Image(500, 500)
+    val image: Image = new Image(options.width, options.height)
     val scene: Scene = new Scene()
     val tracer: RayTracerEngine = new RayTracerEngine()
     tracer.render(scene, image)
     val t: Long = System.nanoTime() - start
-    image.save("ray-scala.bmp")
-    println("Rendered in: " + TimeUnit.NANOSECONDS.toMillis(t) + " ms")
+    image.save(options.output)
+    val timeMs = t / 1000000.0
+    System.out.printf(Locale.US, "render time_ms=%.4f width=%d height=%d output=\"%s\"%n", timeMs, options.width, options.height, options.output)
+  }
+}
+
+case class BenchmarkOptions(width: Int = 500, height: Int = 500, output: String = "ray-scala.bmp")
+
+object BenchmarkOptions {
+  def parse(args: Array[String]): BenchmarkOptions = {
+    var options = BenchmarkOptions()
+    var i = 0
+
+    while (i < args.length) {
+      val name = args(i)
+      val value = if (i + 1 < args.length) args(i + 1) else ""
+
+      if (name == "--width" && value.nonEmpty) {
+        options = options.copy(width = value.toInt)
+        i += 1
+      } else if (name == "--height" && value.nonEmpty) {
+        options = options.copy(height = value.toInt)
+        i += 1
+      } else if (name == "--output" && value.nonEmpty) {
+        options = options.copy(output = value)
+        i += 1
+      }
+
+      i += 1
+    }
+
+    options
   }
 }
 
@@ -301,8 +333,8 @@ class RayTracerEngine {
   }
 
   def render(scene: Scene, img: Image): Unit = {
-    val h: Int = img.getHeight()
-    val w: Int = img.getWidth()
+    val h: Int = img.height
+    val w: Int = img.width
     for (y <- 0 until h; x <- 0 until w) {
       val point: Vector = scene.camera.getPoint(x, y, w, h)
       val ray: Ray = new Ray(scene.camera.pos, point)

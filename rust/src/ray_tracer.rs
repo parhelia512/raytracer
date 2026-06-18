@@ -490,7 +490,7 @@ impl RayTracerEngine {
 
         for y in 0..h {
             for x in 0..w {
-                ray.dir = self.get_point(x, y, self.scene.camera, h, w);
+                ray.dir = self.get_point(x, y, self.scene.camera, w, h);
                 let color = self.trace_ray(&ray, 0).to_drawing_color();
                 image.set_pixel(x, y, Pixel::new(color.r, color.g, color.b));
             }
@@ -504,7 +504,7 @@ impl RayTracerEngine {
             .map(|(y, x)| {
                 let ray = Ray {
                     start: self.scene.camera.pos,
-                    dir: self.get_point(x, y, self.scene.camera, h, w),
+                    dir: self.get_point(x, y, self.scene.camera, w, h),
                 };
                 let color = self.trace_ray(&ray, 0).to_drawing_color();
 
@@ -518,14 +518,61 @@ impl RayTracerEngine {
     }
 }
 
-fn main() {
-    let is_parallel = env::args_os()
-        .nth(1)
-        .and_then(|s| s.into_string().map(|s| s == "parallel").ok())
-        .unwrap_or(false);
+struct BenchmarkOptions {
+    width: u32,
+    height: u32,
+    output: String,
+    is_parallel: bool,
+}
 
-    let width: u32 = 500;
-    let height: u32 = 500;
+fn parse_benchmark_options() -> BenchmarkOptions {
+    let mut options = BenchmarkOptions {
+        width: 500,
+        height: 500,
+        output: "RayTracer.bmp".to_string(),
+        is_parallel: false,
+    };
+
+    let args: Vec<String> = env::args().skip(1).collect();
+    let mut i = 0;
+
+    while i < args.len() {
+        let name = &args[i];
+        let value = args.get(i + 1);
+
+        if name == "parallel" {
+            options.is_parallel = true;
+        } else if name == "--width" {
+            if let Some(value) = value {
+                if let Ok(width) = value.parse() {
+                    options.width = width;
+                }
+                i += 1;
+            }
+        } else if name == "--height" {
+            if let Some(value) = value {
+                if let Ok(height) = value.parse() {
+                    options.height = height;
+                }
+                i += 1;
+            }
+        } else if name == "--output" {
+            if let Some(value) = value {
+                options.output = value.clone();
+                i += 1;
+            }
+        }
+
+        i += 1;
+    }
+
+    options
+}
+
+fn main() {
+    let options = parse_benchmark_options();
+    let width = options.width;
+    let height = options.height;
 
     let mut image = Image::new(width, height);
 
@@ -536,18 +583,18 @@ fn main() {
 
     let now = Instant::now();
 
-    if is_parallel {
+    if options.is_parallel {
         engine.parallel_render(&mut image, width, height);
     } else {
         engine.render(&mut image, width, height);
     }
 
     let t = now.elapsed().as_millis();
-    let version = if is_parallel { "[Paralel]" } else { "" };
 
     println!(
-        "Completed in {:?} ms {}", t, version
+        "render time_ms={} width={} height={} output=\"{}\"",
+        t, width, height, options.output
     );
 
-    image.save("RayTracer.bmp");
+    image.save(options.output);
 }

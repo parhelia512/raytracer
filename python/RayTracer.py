@@ -1,5 +1,6 @@
 import math
 import time
+import argparse
 
 from PIL import Image
 
@@ -277,8 +278,14 @@ class Scene:
         self.camera = Camera(Vector(3.0, 2.0, 4.0), Vector(-1.0, 0.5, 0.0))
 
 if __name__ == "__main__":
-    width  = 500
-    height = 500
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--width", type=int, default=500)
+    parser.add_argument("--height", type=int, default=500)
+    parser.add_argument("--output", default="py-ray-tracer.png")
+    options = parser.parse_args()
+
+    width  = options.width
+    height = options.height
     image =  Image.new("RGB", (width, height), "white")
 
     rayTracer = RayTracer(Scene())
@@ -289,5 +296,5 @@ if __name__ == "__main__":
     t2 = time.time()
     t = (t2 -t1)*1000
 
-    image.save("py-ray-tracer.png","png")
-    print ("Completed in {:.4f} ms".format(t))
+    image.save(options.output)
+    print ("render time_ms={:.4f} width={} height={} output=\"{}\"".format(t, width, height, options.output))

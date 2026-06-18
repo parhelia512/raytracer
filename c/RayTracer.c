@@ -2,6 +2,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include <stdint.h>
 #if __EMSCRIPTEN__
@@ -561,13 +562,53 @@ void SaveRGBBitmap(UInt8* bitmapBits, int width, int height, int bitsPerPixel, c
     fclose(hFile);
 }
 
-int main()
+typedef struct BenchmarkOptions
 {
+    int width;
+    int height;
+    const char* output;
+} BenchmarkOptions;
+
+BenchmarkOptions ParseBenchmarkOptions(int argc, char** argv)
+{
+    BenchmarkOptions options;
+    options.width = 500;
+    options.height = 500;
+    options.output = "c-raytracer.bmp";
+
+    for (int i = 1; i < argc; i++)
+    {
+        const char* name = argv[i];
+        const char* value = (i + 1 < argc) ? argv[i + 1] : "";
+
+        if (strcmp(name, "--width") == 0 && value[0] != '\0')
+        {
+            options.width = atoi(value);
+            i++;
+        }
+        else if (strcmp(name, "--height") == 0 && value[0] != '\0')
+        {
+            options.height = atoi(value);
+            i++;
+        }
+        else if (strcmp(name, "--output") == 0 && value[0] != '\0')
+        {
+            options.output = value;
+            i++;
+        }
+    }
+
+    return options;
+}
+
+int main(int argc, char** argv)
+{
+    BenchmarkOptions options = ParseBenchmarkOptions(argc, argv);
     clock_t t1 = clock();
     Scene scene  = CreateScene();
 
-    int width  = 500;
-    int height = 500;
+    int width  = options.width;
+    int height = options.height;
     int stride = width * 4;
 
     UInt8* bitmapData = (UInt8*)(malloc(stride * height));
@@ -578,8 +619,8 @@ int main()
     clock_t time = t2 - t1;
     int time_ms = (int)((((double)time) / CLOCKS_PER_SEC) * 1000);
 
-    printf("Completed in %d ms\n", time_ms);
-    SaveRGBBitmap(&bitmapData[0], width, height, 32, "c-raytracer.bmp");
+    printf("render time_ms=%d width=%d height=%d output=\"%s\"\n", time_ms, width, height, options.output);
+    SaveRGBBitmap(&bitmapData[0], width, height, 32, options.output);
 #if __EMSCRIPTEN__
     EM_ASM(
         const stream = FS.open("c-raytracer.bmp", "r");

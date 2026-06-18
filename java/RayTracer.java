@@ -3,19 +3,50 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 public class RayTracer {
     public static void main(String[] args) throws IOException {
+        BenchmarkOptions options = BenchmarkOptions.parse(args);
         long start = System.nanoTime();
-        Image image = new Image(500, 500);
+        Image image = new Image(options.width, options.height);
         Scene scene = new Scene();
         RayTracerEngine tracer = new RayTracerEngine();
         tracer.render(scene, image);
         long t = System.nanoTime() - start;
 
-        image.save("java-ray.bmp");
-        System.out.println("Rendered in: " + TimeUnit.NANOSECONDS.toMillis(t) + " ms");
+        image.save(options.output);
+        double timeMs = t / 1000000.0;
+        System.out.printf(Locale.US, "render time_ms=%.4f width=%d height=%d output=\"%s\"%n", timeMs, options.width, options.height, options.output);
+    }
+}
+
+class BenchmarkOptions {
+    public int width = 500;
+    public int height = 500;
+    public String output = "java-ray.bmp";
+
+    public static BenchmarkOptions parse(String[] args) {
+        BenchmarkOptions options = new BenchmarkOptions();
+
+        for (int i = 0; i < args.length; i++) {
+            String name = args[i];
+            String value = i + 1 < args.length ? args[i + 1] : "";
+
+            if (name.equals("--width") && !value.isEmpty()) {
+                options.width = Integer.parseInt(value);
+                i++;
+            } else if (name.equals("--height") && !value.isEmpty()) {
+                options.height = Integer.parseInt(value);
+                i++;
+            } else if (name.equals("--output") && !value.isEmpty()) {
+                options.output = value;
+                i++;
+            }
+        }
+
+        return options;
     }
 }
 

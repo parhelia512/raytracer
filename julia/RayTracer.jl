@@ -336,9 +336,9 @@ function GetNaturalColor(scene::Scene, surface::SurfaceProperties, pos::Vector, 
     return result
 end 
 
-function Render(scene::Scene)  
+function Render(scene::Scene, width::Int, height::Int)  
     camera = scene.camera
-    image = Image(500, 500)
+    image = Image(width, height)
 
     w = image.width - 1
     h = image.height - 1
@@ -351,11 +351,38 @@ function Render(scene::Scene)
     end
     return image
 end
-                                                                                                        
-scene = Scene()
-image = Render(scene)
-@time begin
-    scene = Scene()
-    image = Render(scene)
+
+function ParseBenchmarkOptions(args)
+    width = 500
+    height = 500
+    output = "julia-ray.bmp"
+    i = 1
+
+    while i <= length(args)
+        name = args[i]
+        value = i + 1 <= length(args) ? args[i + 1] : ""
+
+        if name == "--width" && value != ""
+            width = parse(Int, value)
+            i += 1
+        elseif name == "--height" && value != ""
+            height = parse(Int, value)
+            i += 1
+        elseif name == "--output" && value != ""
+            output = value
+            i += 1
+        end
+
+        i += 1
+    end
+
+    return (width = width, height = height, output = output)
 end
-Save(image, "julia-ray.bmp")
+
+options = ParseBenchmarkOptions(ARGS)
+scene = Scene()
+elapsed = @elapsed begin
+    global image = Render(scene, options.width, options.height)
+end
+Save(image, options.output)
+println("render time_ms=$(round(elapsed * 1000, digits=4)) width=$(options.width) height=$(options.height) output=\"$(options.output)\"")

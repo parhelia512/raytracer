@@ -13,10 +13,11 @@ class RGBColor
 
 class RayTracer
 {
-    public static function run()
+    public static function run(array $args)
     {
-        $w = 500;
-        $h = 500;
+        $options = BenchmarkOptions::parse($args);
+        $w = $options->width;
+        $h = $options->height;
 
         $image = new Image($w, $h);
 
@@ -26,10 +27,40 @@ class RayTracer
         $rayTracer->render($scene, $image, $w, $h);
         $t2 = microtime(true);
 
-        $image->save("php-raytracer.bmp");
-        $t = (int)(($t2 - $t1) * 1000);
+        $image->save($options->output);
+        $t = ($t2 - $t1) * 1000;
 
-        echo "Completed in $t ms\n";
+        echo sprintf("render time_ms=%.4f width=%d height=%d output=\"%s\"\n", $t, $w, $h, $options->output);
+    }
+}
+
+class BenchmarkOptions
+{
+    public int $width = 500;
+    public int $height = 500;
+    public string $output = "php-raytracer.bmp";
+
+    public static function parse(array $args): BenchmarkOptions
+    {
+        $options = new BenchmarkOptions();
+
+        for ($i = 1; $i < count($args); $i++) {
+            $name = $args[$i];
+            $value = $args[$i + 1] ?? "";
+
+            if ($name === "--width" && $value !== "") {
+                $options->width = intval($value);
+                $i++;
+            } elseif ($name === "--height" && $value !== "") {
+                $options->height = intval($value);
+                $i++;
+            } elseif ($name === "--output" && $value !== "") {
+                $options->output = $value;
+                $i++;
+            }
+        }
+
+        return $options;
     }
 }
 
@@ -186,10 +217,10 @@ class Camera
 
 class Ray
 {
-    public Vector $start;
-    public Vector $dir;
+    public ?Vector $start;
+    public ?Vector $dir;
 
-    public function __construct(Vector $start = null, Vector $dir = null)
+    public function __construct(?Vector $start = null, ?Vector $dir = null)
     {
         $this->start = $start;
         $this->dir = $dir;
@@ -462,4 +493,4 @@ class RayTracerEngine
     }
 }
 
-RayTracer::run();
+RayTracer::run($argv);

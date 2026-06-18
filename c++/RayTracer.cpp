@@ -5,6 +5,8 @@
 #include <fstream>
 #include <chrono>
 #include <optional>
+#include <string>
+#include <cstdlib>
 
 const double FarAway = 1000000.0;
 using UInt8 = unsigned char;
@@ -375,7 +377,7 @@ public:
         int pos = 0;
 
         for (int y = 0; y < h; ++y) {
-            pos = y * h;
+            pos = y * w;
             for (int x = 0; x < w; ++x) {
                 ray.dir = camera.GetPoint(x, y, w, h);
                 image[pos + x] = TraceRay(ray, 0).ToDrawingColor();
@@ -438,15 +440,48 @@ void SaveImage(RgbColor* bitmapBits, int width, int height, const char* fileName
     file.close();
 }
 
-int main()
+struct BenchmarkOptions
 {
+    int width = 500;
+    int height = 500;
+    std::string output = "cpp-raytracer.bmp";
+};
+
+BenchmarkOptions ParseBenchmarkOptions(int argc, char** argv)
+{
+    BenchmarkOptions options;
+
+    for (int i = 1; i < argc; i++) {
+        std::string name = argv[i];
+        const char* value = (i + 1 < argc) ? argv[i + 1] : "";
+
+        if (name == "--width" && value[0] != '\0') {
+            options.width = std::atoi(value);
+            i++;
+        }
+        else if (name == "--height" && value[0] != '\0') {
+            options.height = std::atoi(value);
+            i++;
+        }
+        else if (name == "--output" && value[0] != '\0') {
+            options.output = value;
+            i++;
+        }
+    }
+
+    return options;
+}
+
+int main(int argc, char** argv)
+{
+    BenchmarkOptions options = ParseBenchmarkOptions(argc, argv);
     auto t1 = std::chrono::high_resolution_clock::now();
 
     Scene scene;
     RayTracerEngine rayTracer(scene);
 
-    const int width = 500;
-    const int height = 500;
+    const int width = options.width;
+    const int height = options.height;
 
     std::vector<RgbColor> bitmapData(width * height);
     rayTracer.render(&bitmapData[0], width, height);
@@ -454,8 +489,8 @@ int main()
     auto t2 = std::chrono::high_resolution_clock::now();
     auto diff = std::chrono::duration_cast<std::chrono::milliseconds>((t2 - t1));
 
-    std::cout << "Completed in " << diff.count() << " ms" << std::endl;
-    SaveImage(&bitmapData[0], width, height, "cpp-raytracer.bmp");
+    std::cout << "render time_ms=" << diff.count() << " width=" << width << " height=" << height << " output=\"" << options.output << "\"" << std::endl;
+    SaveImage(&bitmapData[0], width, height, options.output.c_str());
 
     return 0;
 };

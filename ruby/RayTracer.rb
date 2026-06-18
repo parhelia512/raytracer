@@ -283,7 +283,33 @@ class DefaultScene
   end
 end
 
-width, height = 500, 500
+def parse_benchmark_options(args)
+  options = { width: 500, height: 500, output: "ruby-raytracer.bmp" }
+  i = 0
+
+  while i < args.length
+    name = args[i]
+    value = args[i + 1]
+
+    if name == "--width" && value
+      options[:width] = value.to_i
+      i += 1
+    elsif name == "--height" && value
+      options[:height] = value.to_i
+      i += 1
+    elsif name == "--output" && value
+      options[:output] = value
+      i += 1
+    end
+
+    i += 1
+  end
+
+  options
+end
+
+options = parse_benchmark_options(ARGV)
+width, height = options[:width], options[:height]
 image = ImageRuby::Image.new(width, height, ImageRuby::Color.black)
 
 t1 = Time.now
@@ -292,5 +318,5 @@ scene     = DefaultScene.new()
 rayTracer.render(scene, image, width, height)
 t2 = (Time.now - t1) * 1000
 
-puts "Completed in #{t2} ms"
-image.save("ruby-raytracer.bmp", :bmp)
+puts "render time_ms=#{t2} width=#{width} height=#{height} output=\"#{options[:output]}\""
+image.save(options[:output], :bmp)

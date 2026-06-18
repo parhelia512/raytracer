@@ -229,15 +229,43 @@ class DefaultScene
   end
 end
 
-width, height = 500, 500
+def parse_benchmark_options(args)
+  width = 500
+  height = 500
+  output = "crystal-raytracer.png"
+  i = 0
+
+  while i < args.size
+    name = args[i]
+    value = i + 1 < args.size ? args[i + 1] : ""
+
+    if name == "--width" && !value.empty?
+      width = value.to_i
+      i += 1
+    elsif name == "--height" && !value.empty?
+      height = value.to_i
+      i += 1
+    elsif name == "--output" && !value.empty?
+      output = value
+      i += 1
+    end
+
+    i += 1
+  end
+
+  {width, height, output}
+end
+
+width, height, output = parse_benchmark_options(ARGV)
 image = StumpyCore::Canvas.new(width, height)
 
-t1 = Time.monotonic
+t1 = Time.measure do
 rayTracer = RayTracer.new
 scene = DefaultScene.new
 rayTracer.render(scene, image, width, height)
-t2 = (Time.monotonic - t1).total_milliseconds
+end
+t2 = t1.total_milliseconds
 
-puts "Completed in #{t2} ms"
+puts "render time_ms=#{t2} width=#{width} height=#{height} output=\"#{output}\""
 
-StumpyPNG.write(image, "crystal-raytracer.png") 
+StumpyPNG.write(image, output) 

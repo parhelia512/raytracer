@@ -3,19 +3,51 @@ Imports System.Runtime.InteropServices
 
 Module RayTracer
 
-    Sub Main()
+    Sub Main(args As String())
+        Dim options = BenchmarkOptions.Parse(args)
         Dim sw As New Stopwatch()
         sw.Start()
-        Dim image As New Image(500, 500)
+        Dim image As New Image(options.Width, options.Height)
         Dim scene As New Scene()
         Dim rayTracer As New RayTracerEngine()
         rayTracer.Render(scene, image)
         sw.Stop()
-        image.Save("vb-ray.bmp")
-        Console.WriteLine("Completed in: " + sw.ElapsedMilliseconds.ToString() + " ms")
+        image.Save(options.Output)
+        Console.WriteLine($"render time_ms={sw.ElapsedMilliseconds} width={options.Width} height={options.Height} output=""{options.Output}""")
     End Sub
 
 End Module
+
+Class BenchmarkOptions
+    Public Property Width As Integer = 500
+    Public Property Height As Integer = 500
+    Public Property Output As String = "vb-ray.bmp"
+
+    Public Shared Function Parse(args As String()) As BenchmarkOptions
+        Dim options As New BenchmarkOptions()
+        Dim i = 0
+
+        While i < args.Length
+            Dim name = args(i)
+            Dim value = If(i + 1 < args.Length, args(i + 1), "")
+
+            If name = "--width" AndAlso value <> "" Then
+                options.Width = Integer.Parse(value)
+                i += 1
+            ElseIf name = "--height" AndAlso value <> "" Then
+                options.Height = Integer.Parse(value)
+                i += 1
+            ElseIf name = "--output" AndAlso value <> "" Then
+                options.Output = value
+                i += 1
+            End If
+
+            i += 1
+        End While
+
+        Return options
+    End Function
+End Class
 
 Structure Vector
     Public X As Double

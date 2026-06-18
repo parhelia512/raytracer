@@ -370,7 +370,27 @@ class BitmapImage {
     }
 }
 
+function parseBenchmarkOptions(args) {
+    const options = { width: 500, height: 500, output: 'javascript-raytracer.bmp' };
+    for (let i = 0; i < args.length; i++) {
+        const name = args[i];
+        const value = args[i + 1];
+        if (name === '--width' && value) {
+            options.width = parseInt(value, 10);
+            i++;
+        } else if (name === '--height' && value) {
+            options.height = parseInt(value, 10);
+            i++;
+        } else if (name === '--output' && value) {
+            options.output = value;
+            i++;
+        }
+    }
+    return options;
+}
+
 (function() {
+    const options = parseBenchmarkOptions(process.argv.slice(2));
     const start = performance.now();
 
     // create the scene
@@ -392,11 +412,11 @@ class BitmapImage {
     );
 
     // render the scene
-    const image = new BitmapImage(500, 500);
+    const image = new BitmapImage(options.width, options.height);
     renderScene(scene, image, 5);
 
     // log the runtime and save the render
     const time = performance.now() - start;      
-    console.log(`Completed in ${time.toFixed(0)} ms`);
-    image.saveSync('javascript-raytracer.bmp');
+    console.log(`render time_ms=${time.toFixed(0)} width=${options.width} height=${options.height} output="${options.output}"`);
+    image.saveSync(options.output);
 })();

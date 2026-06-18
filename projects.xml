@@ -5,7 +5,7 @@
     -->
     <Project Path="php" Language="PHP">
         <Command Name="Default">
-            <Run Process="php" Arguments="RayTracer.php" />
+            <Run Process="cmd" Arguments="/c php RayTracer.php" />
         </Command>
     </Project>
 
@@ -49,7 +49,7 @@
     <Project Path="scala" Language="Scala">
         <Command Name="Default">
             <!-- TODO: Update to be cross platform, separate compile and run steps -->
-            <Run Process="cmd" Arguments="/c scala .\RayTracer.scala" />
+            <Run Process="cmd" Arguments="/c scala .\RayTracer.scala --" />
         </Command>
     </Project>
 
@@ -83,7 +83,7 @@
 
     <Project Path="nim" Language="Nim">
         <Command Name="Default">
-            <Build Process="nim"  Arguments="c -d:danger -d:lto -d:intpow --passC:&quot;-march=native&quot; -r RayTracer.nim" />
+            <Build Process="nim"  Arguments="c -d:danger -d:lto -d:intpow --passC:&quot;-march=native&quot; RayTracer.nim" />
             <Run   Process="RayTracer.exe"/>
         </Command>
     </Project>
@@ -128,5 +128,12 @@
             <Build Process="go"  Arguments="build -ldflags &quot;-s -w&quot; -o RayTracer.exe" />
             <Run   Process="RayTracer.exe"/>
         </Command>
-    </Project>   
+    </Project>
+
+    <Project Path="haskel" Language="Haskell">
+        <Command Name="Default">
+            <Build Process="cmd" Arguments="/c ghc -O2 RayTracer.hs -o RayTracer.exe" />
+            <Run Process="RayTracer.exe" />
+        </Command>
+    </Project>
 </Projects>

@@ -1,6 +1,8 @@
 import math
 import times
 import macros
+import os
+import strutils
 type
   SurfaceType = enum
     ShinySurface, CheckerBoardSurface
@@ -361,11 +363,41 @@ proc SaveRGBBitmap(bitmapData: seq[RgbColor], width: int, height: int,
     discard file.writeBuffer(addr x, sizeof(RgbColor))
   file.close()
 
+type BenchmarkOptions = object
+  width: int
+  height: int
+  output: string
+
+proc parseBenchmarkOptions(): BenchmarkOptions =
+  result.width = 500
+  result.height = 500
+  result.output = "nim-raytracer.bmp"
+
+  let args = commandLineParams()
+  var i = 0
+
+  while i < args.len:
+    let name = args[i]
+    let value = if i + 1 < args.len: args[i + 1] else: ""
+
+    if name == "--width" and value.len > 0:
+      result.width = parseInt(value)
+      i += 1
+    elif name == "--height" and value.len > 0:
+      result.height = parseInt(value)
+      i += 1
+    elif name == "--output" and value.len > 0:
+      result.output = value
+      i += 1
+
+    i += 1
+
 when isMainModule:
+  let options = parseBenchmarkOptions()
   var t1 = cpuTime()
   var scene = initScene()
-  var width = 500
-  var height = 500
+  var width = options.width
+  var height = options.height
   var stride = width * 4
   var bitmapData = newSeq[RgbColor](width * height)
 
@@ -373,6 +405,6 @@ when isMainModule:
   var t2 = cpuTime()
   var diff = (t2 - t1) * 1000
 
-  echo "Completed in ", diff, " ms"
+  echo "render time_ms=", diff, " width=", width, " height=", height, " output=\"", options.output, "\""
 
-  SaveRGBBitmap(bitmapData, width, height, 32, "nim-raytracer.bmp")
+  SaveRGBBitmap(bitmapData, width, height, 32, options.output)

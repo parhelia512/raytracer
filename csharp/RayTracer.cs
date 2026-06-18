@@ -7,15 +7,52 @@ internal class Program
 {
     private static void Main(string[] args)
     {
-        var image = new Image(500, 500);
+        var options = BenchmarkOptions.Parse(args);
+        var image = new Image(options.Width, options.Height);
         Stopwatch sw = new Stopwatch();
         sw.Start();
         var rayTracer = new RayTracerEngine();
         var scene = new Scene();
         rayTracer.Render(scene, image);
         sw.Stop();
-        image.Save("csharp-ray.bmp");
-        Console.WriteLine("Completed in " + sw.ElapsedMilliseconds.ToString() + " ms");
+        image.Save(options.Output);
+        Console.WriteLine($"render time_ms={sw.ElapsedMilliseconds} width={options.Width} height={options.Height} output=\"{options.Output}\"");
+    }
+}
+
+internal class BenchmarkOptions
+{
+    public int Width { get; private set; } = 500;
+    public int Height { get; private set; } = 500;
+    public string Output { get; private set; } = "csharp-ray.bmp";
+
+    public static BenchmarkOptions Parse(string[] args)
+    {
+        var options = new BenchmarkOptions();
+
+        for (var i = 0; i < args.Length; i++)
+        {
+            var name = args[i];
+            var value = i + 1 < args.Length ? args[i + 1] : "";
+
+            if (name == "--width" && int.TryParse(value, out var width))
+            {
+                options.Width = width;
+                i++;
+            }
+            else if (name == "--height" && int.TryParse(value, out var height))
+            {
+                options.Height = height;
+                i++;
+            }
+            else if (name == "--output" && !string.IsNullOrWhiteSpace(value))
+            {
+                options.Output = value;
+                i++;
+            }
+        }
+
+        return options;
     }
 }
 
@@ -504,7 +541,7 @@ internal class RayTracerEngine
 
         for (var y = 0; y < h; ++y)
         {
-            int pos = y * h;
+            int pos = y * w;
             for (var x = 0; x < w; ++x)
             {
                 ray.Dir = scene.Camera.GetPoint(x, y, w, h);

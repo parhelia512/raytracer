@@ -99,7 +99,7 @@ namespace Tools.Commands
             if (changeCount > 0)
             {
                 imageDiff.SaveAsBmp("diff.bmp");
-                long totalPixels = a.Width * b.Width;
+                long totalPixels = a.Width * a.Height;
                 Console.WriteLine($"Changes detected: {changeCount} out of {totalPixels} does not match\n");
 
                 Console.ForegroundColor = ConsoleColor.DarkBlue;

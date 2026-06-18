@@ -1,4 +1,4 @@
-import * as fs from "fs";
+const fs = require("fs");
 const { performance } = require('perf_hooks');
 
 class Vector {
@@ -105,7 +105,7 @@ interface Surface {
 }
 
 interface Thing {
-    intersect (ray: Ray): Intersection;
+    intersect (ray: Ray): Intersection | null;
     normal (pos: Vector): Vector;
     surface: Surface;
 }
@@ -129,7 +129,7 @@ class Sphere implements Thing {
         return pos.minus(this.center).norm();
     }
 
-    intersect(ray: Ray): Intersection {
+    intersect(ray: Ray): Intersection | null {
         let eo = this.center.minus(ray.start);
         let v =eo.dot(ray.dir);
         let dist = 0;
@@ -147,7 +147,7 @@ class Plane implements Thing {
     public normal (pos: Vector):Vector {
         return this.norm;
     }
-    public intersect(ray: Ray): Intersection {
+    public intersect(ray: Ray): Intersection | null {
         let denom = this.norm.dot(ray.dir);
         if (denom > 0) {
             return null;
@@ -197,8 +197,8 @@ class RayTracer {
     private intersections(ray: Ray, scene: Scene): Intersection|null {
         return scene.things
             .map(thing => thing.intersect(ray))
-            .filter(inter => inter !== null)
-            .reduce((a,b)=> {
+            .filter((inter): inter is Intersection => inter !== null)
+            .reduce<Intersection|null>((a,b)=> {
                 return (a != null && a.dist < b.dist) ? a : b
             }, null)
     }
@@ -404,12 +404,32 @@ class BitmapImage {
     }
 }
 
+function parseBenchmarkOptions(args: string[]) {
+    const options = { width: 500, height: 500, output: "typescript-ray.bmp" };
+    for (let i = 0; i < args.length; i++) {
+        const name = args[i];
+        const value = args[i + 1];
+        if (name === "--width" && value) {
+            options.width = parseInt(value, 10);
+            i++;
+        } else if (name === "--height" && value) {
+            options.height = parseInt(value, 10);
+            i++;
+        } else if (name === "--output" && value) {
+            options.output = value;
+            i++;
+        }
+    }
+    return options;
+}
+
 (function() {
+    const options = parseBenchmarkOptions(process.argv.slice(2));
     const start = performance.now()
-    const image = new BitmapImage(500,500);
+    const image = new BitmapImage(options.width, options.height);
     let rayTracer = new RayTracer();
     rayTracer.render(defaultScene(), image);
-    image.saveSync("typescript-ray.bmp")
+    image.saveSync(options.output)
     const time = Math.round(performance.now() - start);      
-    console.log(`Completed in ${time} ms`)
+    console.log(`render time_ms=${time} width=${options.width} height=${options.height} output="${options.output}"`)
 })();
