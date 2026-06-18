@@ -1,4 +1,4 @@
-# Install
+# Crystal
 
 Restore packages using:
 
@@ -6,10 +6,8 @@ Restore packages using:
 shards install --ignore-crystal-version
 ```
 
-# Run
+Run through the root ray tool:
 
-Run raytracer using:
-
-```
-./run.sh
+```cmd
+ray time crystal --width 500 --height 500
 ```

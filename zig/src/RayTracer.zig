@@ -1,6 +1,12 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
+const BenchmarkOptions = struct {
+    width: i32 = 500,
+    height: i32 = 500,
+    output: []const u8 = "zig-ray.bmp",
+};
+
 const RGBColor = struct {
     b: u8,
     g: u8,
@@ -64,7 +70,7 @@ const Vector = struct {
     }
 
     pub fn norm(self: Vector) Vector {
-        var magnitude = self.mag();
+        const magnitude = self.mag();
         var div: f64 = 0.0;
         if (magnitude == 0.0) {
             div = FarAway;
@@ -112,7 +118,7 @@ const Color = struct {
     pub fn clamp(c: f64) u8 {
         if (c < 0.0) return 1;
         if (c > 1.0) return 255;
-        return @floatToInt(u8, c * 255.0);
+        return @as(u8, @intFromFloat(c * 255.0));
     }
 };
 
@@ -184,12 +190,8 @@ const Surface = enum {
 };
 
 const Thing = union(enum) {
-    Plane: struct {
-        norm: Vector, offset: f64, surface: Surface
-    },
-    Sphere: struct {
-        center: Vector, radius2: f64, surface: Surface
-    },
+    Plane: struct { norm: Vector, offset: f64, surface: Surface },
+    Sphere: struct { center: Vector, radius2: f64, surface: Surface },
 };
 
 fn GetNormal(thing: Thing, pos: Vector) Vector {
@@ -209,19 +211,19 @@ fn GetSurface(thing: Thing) Surface {
 fn GetIntersection(thing: Thing, ray: Ray) ?Intersection {
     return switch (thing) {
         Thing.Plane => |plane| {
-            var denom = plane.norm.dot(ray.dir);
+            const denom = plane.norm.dot(ray.dir);
             if (denom > 0) {
                 return null;
             }
-            var dist = (plane.norm.dot(ray.start) + plane.offset) / (-denom);
+            const dist = (plane.norm.dot(ray.start) + plane.offset) / (-denom);
             return Intersection.init(thing, ray, dist);
         },
         Thing.Sphere => |sphere| {
-            var eo = sphere.center.sub(ray.start);
-            var v = eo.dot(ray.dir);
+            const eo = sphere.center.sub(ray.start);
+            const v = eo.dot(ray.dir);
             var dist: f64 = 0.0;
             if (v >= 0) {
-                var disc = sphere.radius2 - (eo.dot(eo) - v * v);
+                const disc = sphere.radius2 - (eo.dot(eo) - v * v);
                 if (disc >= 0) {
                     dist = v - std.math.sqrt(disc);
                 }
@@ -245,7 +247,7 @@ fn GetSurfaceProperties(surface: Surface, pos: Vector) SurfaceProperties {
             };
         },
         Surface.CheckerboardSurface => {
-            var condition = @mod(@floatToInt(i32, std.math.floor(pos.z) + std.math.floor(pos.x)), 2) != 0;
+            const condition = @mod(@as(i32, @intFromFloat(std.math.floor(pos.z) + std.math.floor(pos.x))), 2) != 0;
             var color = Black;
             var reflect: f64 = 0.7;
             if (condition) {
@@ -267,73 +269,92 @@ const Scene = struct {
     lights: [4]Light,
     camera: Camera,
     pub fn init() Scene {
-        var things = [3]Thing{
-            Thing{ .Plane =  .{ .norm   = Vector.init(0.0, 1.0, 0.0), .offset = 0.0, .surface = Surface.CheckerboardSurface } },
+        const things = [3]Thing{
+            Thing{ .Plane = .{ .norm = Vector.init(0.0, 1.0, 0.0), .offset = 0.0, .surface = Surface.CheckerboardSurface } },
             Thing{ .Sphere = .{ .center = Vector.init(0.0, 1.0, -0.25), .radius2 = 1.0, .surface = Surface.ShinySurface } },
             Thing{ .Sphere = .{ .center = Vector.init(-1.0, 0.5, 1.5), .radius2 = 0.25, .surface = Surface.ShinySurface } },
         };
-        var lights = [4]Light{
+        const lights = [4]Light{
             Light.init(Vector.init(-2.0, 2.5, 0.0), Color.init(0.49, 0.07, 0.07)),
             Light.init(Vector.init(1.5, 2.5, 1.5), Color.init(0.07, 0.07, 0.49)),
             Light.init(Vector.init(1.5, 2.5, -1.5), Color.init(0.07, 0.49, 0.071)),
             Light.init(Vector.init(0.0, 3.5, 0.0), Color.init(0.21, 0.21, 0.35)),
         };
-        var camera = Camera.init(Vector.init(3.0, 2.0, 4.0), Vector.init(-1.0, 0.5, 0.0));
+        const camera = Camera.init(Vector.init(3.0, 2.0, 4.0), Vector.init(-1.0, 0.5, 0.0));
         return Scene{ .things = things, .lights = lights, .camera = camera };
     }
 };
 
 const Image = struct {
-
     width: i32,
     height: i32,
-    data: [*]RGBColor,
+    data: []RGBColor,
 
-    pub fn init(allocator: *Allocator, w: i32, h: i32) Image {
-        var size: usize = @intCast(usize, w*h);
+    pub fn init(allocator: Allocator, w: i32, h: i32) !Image {
+        const size: usize = @as(usize, @intCast(w * h));
 
-        var data = try allocator.alloc(RGBColor, size);
+        const data = try allocator.alloc(RGBColor, size);
         return Image{ .width = w, .height = h, .data = data };
     }
 
     pub fn setColor(self: Image, x: i32, y: i32, c: RGBColor) void {
-        var idx: usize = @intCast(usize, y * self.width + x);
+        const idx: usize = @as(usize, @intCast(y * self.width + x));
         self.data[idx] = c;
     }
 
-    pub fn save(self:Image, fileName:[]const u8) void {
-        // bmpInfoHeader := BITMAPINFOHEADER{};
-        // bmpInfoHeader.biSize = size_of(BITMAPINFOHEADER);
-        // bmpInfoHeader.biBitCount = 32;
-        // bmpInfoHeader.biClrImportant = 0;
-        // bmpInfoHeader.biClrUsed = 0;
-        // bmpInfoHeader.biCompression = 0;
-        // bmpInfoHeader.biHeight = LONG(-image.height);
-        // bmpInfoHeader.biWidth  = LONG(image.width);
-        // bmpInfoHeader.biPlanes = 1;
-        // bmpInfoHeader.biSizeImage = DWORD(image.width * image.height * 4);
+    pub fn save(self: Image, io: std.Io, fileName: []const u8) !void {
+        const file = try std.Io.Dir.cwd().createFile(io, fileName, .{});
+        defer file.close(io);
 
-        // bfh := BITMAPFILEHEADER{};
-        // bfh.bfType = 'B' + ('M' << 8);
-        // bfh.bfOffBits = size_of(BITMAPINFOHEADER) + size_of(BITMAPFILEHEADER);
-        // bfh.bfSize = bfh.bfOffBits + bmpInfoHeader.biSizeImage;
+        var buffer: [4096]u8 = undefined;
+        var file_writer = file.writer(io, &buffer);
+        const stream = &file_writer.interface;
+        const fileHeaderSize: u32 = 14;
+        const infoHeaderSize: u32 = 40;
+        const offBits = fileHeaderSize + infoHeaderSize;
+        const imageSize: u32 = @as(u32, @intCast(self.width * self.height * 4));
 
-        // f, err := os.open(fileName, os.O_WRONLY | os.O_CREATE);
-        // if err == os.ERROR_NONE {
-        //     os.write_ptr(f, &bfh, size_of(bfh));
-        //     os.write_ptr(f, &bmpInfoHeader, size_of(bmpInfoHeader));
-        //     os.write_ptr(f, &image.data[0], len(image.data) * size_of(RgbColor));
-        // }
-        // os.close(f);
+        try writeIntLittle(stream, u16, 0x4D42);
+        try writeIntLittle(stream, u32, offBits + imageSize);
+        try writeIntLittle(stream, u16, 0);
+        try writeIntLittle(stream, u16, 0);
+        try writeIntLittle(stream, u32, offBits);
+
+        try writeIntLittle(stream, u32, infoHeaderSize);
+        try writeIntLittle(stream, i32, self.width);
+        try writeIntLittle(stream, i32, -self.height);
+        try writeIntLittle(stream, u16, 1);
+        try writeIntLittle(stream, u16, 32);
+        try writeIntLittle(stream, u32, 0);
+        try writeIntLittle(stream, u32, imageSize);
+        try writeIntLittle(stream, i32, 0);
+        try writeIntLittle(stream, i32, 0);
+        try writeIntLittle(stream, u32, 0);
+        try writeIntLittle(stream, u32, 0);
+
+        for (self.data) |color| {
+            try stream.writeByte(color.b);
+            try stream.writeByte(color.g);
+            try stream.writeByte(color.r);
+            try stream.writeByte(color.a);
+        }
+
+        try stream.flush();
     }
 };
+
+fn writeIntLittle(writer: *std.Io.Writer, comptime T: type, value: T) !void {
+    var bytes: [@sizeOf(T)]u8 = undefined;
+    std.mem.writeInt(T, &bytes, value, .little);
+    try writer.writeAll(&bytes);
+}
 
 pub fn GetClosestIntersection(scene: Scene, ray: Ray) ?Intersection {
     var closest: f64 = FarAway;
     var closestInter: ?Intersection = null;
 
     for (scene.things) |thing| {
-        var isect = GetIntersection(thing, ray);
+        const isect = GetIntersection(thing, ray);
         if (isect != null and isect.?.dist < closest) {
             closestInter = isect;
             closest = isect.?.dist;
@@ -343,7 +364,7 @@ pub fn GetClosestIntersection(scene: Scene, ray: Ray) ?Intersection {
 }
 
 pub fn TraceRay(scene: Scene, ray: Ray, depth: i32) Color {
-    var isect = GetClosestIntersection(scene, ray);
+    const isect = GetClosestIntersection(scene, ray);
     if (isect == null) {
         return Background;
     }
@@ -351,14 +372,14 @@ pub fn TraceRay(scene: Scene, ray: Ray, depth: i32) Color {
 }
 
 pub fn Shade(scene: Scene, isect: Intersection, depth: i32) Color {
-    var d = isect.ray.dir;
-    var pos = d.scale(isect.dist).add(isect.ray.start);
-    var normal = GetNormal(isect.thing, pos);
+    const d = isect.ray.dir;
+    const pos = d.scale(isect.dist).add(isect.ray.start);
+    const normal = GetNormal(isect.thing, pos);
 
-    var vec = normal.scale(normal.dot(d) * 2.0);
-    var reflectDir = d.sub(vec);
+    const vec = normal.scale(normal.dot(d) * 2.0);
+    const reflectDir = d.sub(vec);
 
-    var naturalColor = Background.add(GetNaturalColor(scene, isect.thing, pos, normal, reflectDir));
+    const naturalColor = Background.add(GetNaturalColor(scene, isect.thing, pos, normal, reflectDir));
     var reflectedColor = Grey;
     if (depth < MaxDepth) {
         reflectedColor = GetReflectionColor(scene, isect.thing, pos, reflectDir, depth);
@@ -367,30 +388,30 @@ pub fn Shade(scene: Scene, isect: Intersection, depth: i32) Color {
 }
 
 pub fn GetReflectionColor(scene: Scene, thing: Thing, pos: Vector, reflectDir: Vector, depth: i32) Color {
-    var ray = Ray.init(pos, reflectDir);
-    var surface = GetSurfaceProperties(GetSurface(thing), pos);
+    const ray = Ray.init(pos, reflectDir);
+    const surface = GetSurfaceProperties(GetSurface(thing), pos);
     return TraceRay(scene, ray, depth + 1).scale(surface.reflect);
 }
 
 pub fn GetNaturalColor(scene: Scene, thing: Thing, pos: Vector, norm: Vector, rd: Vector) Color {
     var resultColor = Black;
-    var surface = GetSurfaceProperties(GetSurface(thing), pos);
-    var rayDirNormal = rd.norm();
+    const surface = GetSurfaceProperties(GetSurface(thing), pos);
+    const rayDirNormal = rd.norm();
 
-    var colDiffuse = surface.diffuse;
-    var colSpecular = surface.specular;
+    const colDiffuse = surface.diffuse;
+    const colSpecular = surface.specular;
 
     for (scene.lights) |light| {
-        var ldis = light.pos.sub(pos);
-        var livec = ldis.norm();
-        var ray = Ray.init(pos, livec);
+        const ldis = light.pos.sub(pos);
+        const livec = ldis.norm();
+        const ray = Ray.init(pos, livec);
 
-        var isect = GetClosestIntersection(scene, ray);
-        var isInShadow = isect != null and isect.?.dist < ldis.mag();
+        const isect = GetClosestIntersection(scene, ray);
+        const isInShadow = isect != null and isect.?.dist < ldis.mag();
 
         if (!isInShadow) {
-            var illum = livec.dot(norm);
-            var specular = livec.dot(rayDirNormal);
+            const illum = livec.dot(norm);
+            const specular = livec.dot(rayDirNormal);
 
             var lcolor = DefaultColor;
             var scolor = DefaultColor;
@@ -413,17 +434,17 @@ pub fn GetNaturalColor(scene: Scene, thing: Thing, pos: Vector, norm: Vector, rd
 }
 
 pub fn GetPoint(camera: Camera, x: i32, y: i32, screenWidth: i32, screenHeight: i32) Vector {
-    var xf = @intToFloat(f64, x);
-    var yf = @intToFloat(f64, y);
-    var wf = @intToFloat(f64, screenWidth);
-    var hf = @intToFloat(f64, screenHeight);
+    const xf = @as(f64, @floatFromInt(x));
+    const yf = @as(f64, @floatFromInt(y));
+    const wf = @as(f64, @floatFromInt(screenWidth));
+    const hf = @as(f64, @floatFromInt(screenHeight));
 
-    var recenterX = (xf - (wf / 2.0)) / 2.0 / wf;
-    var recenterY = -(yf - (hf / 2.0)) / 2.0 / hf;
+    const recenterX = (xf - (wf / 2.0)) / 2.0 / wf;
+    const recenterY = -(yf - (hf / 2.0)) / 2.0 / hf;
 
-    var vx = camera.right.scale(recenterX);
-    var vy = camera.up.scale(recenterY);
-    var v = vx.add(vy);
+    const vx = camera.right.scale(recenterX);
+    const vy = camera.up.scale(recenterY);
+    const v = vx.add(vy);
 
     return camera.forward.add(v).norm();
 }
@@ -435,9 +456,9 @@ pub fn Render(scene: Scene, image: Image) void {
     while (y < image.height) {
         x = 0;
         while (x < image.width) {
-            var pt = GetPoint(scene.camera, x, y, image.width, image.height);
-            var ray = Ray.init(scene.camera.pos, pt);
-            var color = TraceRay(scene, ray, 0).toDrawingColor();
+            const pt = GetPoint(scene.camera, x, y, image.width, image.height);
+            const ray = Ray.init(scene.camera.pos, pt);
+            const color = TraceRay(scene, ray, 0).toDrawingColor();
             image.setColor(x, y, color);
             x += 1;
         }
@@ -445,21 +466,55 @@ pub fn Render(scene: Scene, image: Image) void {
     }
 }
 
-pub fn main() !void {
-    const stdout = std.io.getStdOut().outStream();
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena.deinit();
-    const allocator = &arena.allocator;
+pub fn main(init: std.process.Init) !void {
+    const allocator = init.arena.allocator();
+    const options = try parseBenchmarkOptions(init.gpa, init.minimal.args);
+    var image = try Image.init(allocator, options.width, options.height);
+    const sceneValue = Scene.init();
 
-    var data = allocator.alloc(RGBColor, 10);
-    data[0] = RGBColor.init(0,0,0);
+    const start = std.Io.Clock.Timestamp.now(init.io, .awake);
+    Render(sceneValue, image);
+    const end = std.Io.Clock.Timestamp.now(init.io, .awake);
 
-    try stdout.print("Data: {}!\n", .{ data });
+    try image.save(init.io, options.output);
+    const elapsed = start.durationTo(end);
+    const elapsedMs = @as(f64, @floatFromInt(elapsed.raw.nanoseconds)) / 1000000.0;
+    try printBenchmark(init.io, elapsedMs, options.width, options.height, options.output);
+}
 
-    // var image = Image.init(allocator, 500, 500);
-    // var scene = Scene.init();
-    // Render(scene, image);
-    // image.save("zig-ray.bmp");
+fn printBenchmark(io: std.Io, elapsedMs: f64, width: i32, height: i32, output: []const u8) !void {
+    var buffer: [512]u8 = undefined;
+    var stdout_writer = std.Io.File.stdout().writer(io, &buffer);
+    const stdout = &stdout_writer.interface;
+    try stdout.print("render time_ms={d:.4} width={} height={} output=\"{s}\"\n", .{ elapsedMs, width, height, output });
+    try stdout.flush();
+}
 
-    try stdout.print("Completed, {}!\n", .{"OK"});
+fn parseBenchmarkOptions(allocator: Allocator, args: std.process.Args) !BenchmarkOptions {
+    var options = BenchmarkOptions{};
+    var iterator = try args.iterateAllocator(allocator);
+    defer iterator.deinit();
+
+    _ = iterator.skip();
+    while (iterator.next()) |name| {
+        if (std.mem.eql(u8, name, "--width")) {
+            if (iterator.next()) |value| {
+                options.width = parseInt(value, options.width);
+            }
+        } else if (std.mem.eql(u8, name, "--height")) {
+            if (iterator.next()) |value| {
+                options.height = parseInt(value, options.height);
+            }
+        } else if (std.mem.eql(u8, name, "--output")) {
+            if (iterator.next()) |value| {
+                options.output = value;
+            }
+        }
+    }
+
+    return options;
+}
+
+fn parseInt(value: []const u8, fallback: i32) i32 {
+    return std.fmt.parseInt(i32, value, 10) catch fallback;
 }

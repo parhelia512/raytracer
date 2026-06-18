@@ -2,6 +2,17 @@
 
 Raytracer benchmarks based on [Typescript](http://www.typescriptlang.org) sample.
 
+## Workflow
+
+Use the root `ray` wrapper as the default way to build, run, compare, and benchmark samples. Per-language `run.bat` and `run.sh` scripts are intentionally not used; commands live in `projects.xml` so the same workflow can run locally and later inside Docker.
+
+```cmd
+dotnet build tools\Tools.csproj
+ray time csharp --width 500 --height 500
+ray time zig --width 500 --height 500 --format json
+ray imagediff csharp zig
+```
+
 ## Results
 
 | Language / Compiler  | Time [ms] |

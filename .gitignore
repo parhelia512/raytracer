@@ -19,6 +19,8 @@ delphi/DelphiRayTracer.dproj.local
 delphi/DelphiRayTracer.identcache
 c++/RayTracer/RayTracer.sdf
 /zig/zig-cache
+/zig/.zig-cache
+/zig/zig-out
 /zig/RayTracer.lib
 *.mod
 node_modules

@@ -1,4 +1,5 @@
-﻿using Tools.Application;
+using System.Globalization;
+using Tools.Application;
 using Tools.Commands;
 
 namespace Tools
@@ -7,6 +8,9 @@ namespace Tools
     {
         private static void Main(string[] args)
         {
+            CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+            CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
+
             var application = new ConsoleApplication(args);
             application.AddCommand(new DiffCommand());
             application.AddCommand(new TimeCommand());

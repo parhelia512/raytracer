@@ -5,135 +5,273 @@
     -->
     <Project Path="php" Language="PHP">
         <Command Name="Default">
-            <Run Process="cmd" Arguments="/c php RayTracer.php" />
+            <Platform Name="Windows">
+                <Run Process="cmd" Arguments="/c php RayTracer.php" />
+            </Platform>
+            <Platform Name="Linux">
+                <Run Process="php" Arguments="RayTracer.php" />
+            </Platform>
         </Command>
     </Project>
 
     <Project Path="ruby" Language="Ruby">
         <Command Name="Default">
-            <Run Process="ruby" Arguments="RayTracer.rb" />
+            <Platform Name="Any">
+                <Run Process="ruby" Arguments="RayTracer.rb" />
+            </Platform>
         </Command>
     </Project>
 
     <Project Path="python" Language="Python">
         <Command Name="Default">
-            <Run Process="python" Arguments="RayTracer.py" />
+            <Platform Name="Windows">
+                <Run Process="python" Arguments="RayTracer.py" />
+            </Platform>
+            <Platform Name="Linux">
+                <Run Process="python3" Arguments="RayTracer.py" />
+            </Platform>
         </Command>
     </Project>
 
     <Project Path="java" Language="Java">
         <Command Name="Default">
-            <Build Process="javac"  Arguments="-d bin   RayTracer.java" />
-            <Run Process="java" Arguments="-cp .\bin RayTracer" />
+            <Platform Name="Any">
+                <Build Process="javac"  Arguments="-d bin RayTracer.java" />
+                <Run Process="java" Arguments="-cp bin RayTracer" />
+            </Platform>
         </Command>
     </Project>
 
     <Project Path="julia" Language="Julia">
         <Command Name="Default">
-            <Run Process="julia" Arguments="RayTracer.jl" />
+            <Platform Name="Any">
+                <Run Process="julia" Arguments="RayTracer.jl" />
+            </Platform>
         </Command>
     </Project>
 
     <Project Path="javascript" Language="JavaScript">
         <Command Name="Default">
-            <Run Process="node" Arguments="RayTracer.js" />
+            <Platform Name="Any">
+                <Run Process="node" Arguments="RayTracer.js" />
+            </Platform>
         </Command>
     </Project>
 
     <Project Path="typescript" Language="TypeScript">
         <Command Name="Default">
-            <Run Process="cmd" Arguments="/c ts-node RayTracer.ts" />
+            <Platform Name="Windows">
+                <Run Process="cmd" Arguments="/c ts-node RayTracer.ts" />
+            </Platform>
+            <Platform Name="Linux">
+                <Run Process="ts-node" Arguments="RayTracer.ts" />
+            </Platform>
         </Command>
     </Project>
 
     <Project Path="scala" Language="Scala">
         <Command Name="Default">
-            <!-- TODO: Update to be cross platform, separate compile and run steps -->
-            <Run Process="cmd" Arguments="/c scala .\RayTracer.scala --" />
+            <Platform Name="Windows">
+                <Run Process="cmd" Arguments="/c scala .\RayTracer.scala --" />
+            </Platform>
+            <Platform Name="Linux">
+                <Run Process="scala" Arguments="./RayTracer.scala --" />
+            </Platform>
         </Command>
     </Project>
 
     <Project Path="vb" Language="Visual Basic">
         <Command Name="Default">
-            <Build Process="dotnet" Arguments="build --configuration Release"/>
-            <Run   Process=".\bin\Release\net5.0\RayTracer.exe"/>
+            <Platform Name="Windows">
+                <Build Process="dotnet" Arguments="build --configuration Release"/>
+                <Run Process=".\bin\Release\net5.0\RayTracer.exe"/>
+            </Platform>
+            <Platform Name="Linux">
+                <Build Process="dotnet" Arguments="build --configuration Release"/>
+                <Run Process="dotnet" Arguments="bin/Release/net5.0/RayTracer.dll"/>
+            </Platform>
         </Command>
     </Project>
 
     <Project Path="fsharp" Language="F#">
         <Command Name="Default">
-            <Build Process="dotnet"  Arguments="build --configuration Release" />
-            <Run   Process=".\bin\Release\net5.0\RayTracer.exe"/>
+            <Platform Name="Windows">
+                <Build Process="dotnet" Arguments="build --configuration Release" />
+                <Run Process=".\bin\Release\net5.0\RayTracer.exe"/>
+            </Platform>
+            <Platform Name="Linux">
+                <Build Process="dotnet" Arguments="build --configuration Release" />
+                <Run Process="dotnet" Arguments="bin/Release/net5.0/RayTracer.dll"/>
+            </Platform>
         </Command>
     </Project>
 
     <Project Path="c" Language="C">
         <Command Name="Default">
-            <Build Process="g++"  Arguments="RayTracer.c -x c -O3 -o RayTracer.exe" />
-            <Run   Process="RayTracer.exe"/>
+            <Platform Name="Windows">
+                <Build Process="g++"  Arguments="RayTracer.c -x c -O3 -o RayTracer.exe" />
+                <Run   Process="RayTracer.exe"/>
+            </Platform>
+            <Platform Name="Linux">
+                <Build Process="gcc" Arguments="RayTracer.c -O3 -o RayTracer" />
+                <Run Process="./RayTracer" />
+            </Platform>
         </Command>
     </Project>
 
     <Project Path="d" Language="D">
         <Command Name="Default">
-            <Build Process="dmd"  Arguments="RayTracer.d -m64 -O -inline -release -noboundscheck" />
-            <Run   Process="RayTracer.exe"/>
+            <Platform Name="Windows">
+                <Build Process="dmd" Arguments="RayTracer.d -m64 -O -inline -release -noboundscheck -of=RayTracer.exe" />
+                <Run Process="RayTracer.exe"/>
+            </Platform>
+            <Platform Name="Linux">
+                <Build Process="dmd" Arguments="RayTracer.d -m64 -O -inline -release -noboundscheck -of=RayTracer" />
+                <Run Process="./RayTracer"/>
+            </Platform>
         </Command>
     </Project>
 
     <Project Path="nim" Language="Nim">
         <Command Name="Default">
-            <Build Process="nim"  Arguments="c -d:danger -d:lto -d:intpow --passC:&quot;-march=native&quot; RayTracer.nim" />
-            <Run   Process="RayTracer.exe"/>
+            <Platform Name="Windows">
+                <Build Process="nim" Arguments="c -d:danger -d:lto -d:intpow --passC:&quot;-march=native&quot; RayTracer.nim" />
+                <Run Process="RayTracer.exe"/>
+            </Platform>
+            <Platform Name="Linux">
+                <Build Process="nim" Arguments="c -d:danger -d:lto -d:intpow --passC:&quot;-march=native&quot; RayTracer.nim" />
+                <Run Process="./RayTracer"/>
+            </Platform>
         </Command>
     </Project>
 
     <Project Path="c++" Language="C++">
         <Command Name="Default">
-            <Build Process="g++"  Arguments="RayTracer.cpp -O2 -std=c++17 -s -o RayTracer.exe" />
-            <Run   Process="RayTracer.exe"/>
+            <Platform Name="Windows">
+                <Build Process="g++" Arguments="RayTracer.cpp -O2 -std=c++17 -s -o RayTracer.exe" />
+                <Run Process="RayTracer.exe"/>
+            </Platform>
+            <Platform Name="Linux">
+                <Build Process="g++" Arguments="RayTracer.cpp -O2 -std=c++17 -s -o RayTracer" />
+                <Run Process="./RayTracer"/>
+            </Platform>
         </Command>
     </Project>
 
     <Project Path="crystal" Language="Crystal">
         <Command Name="Default">
-            <Build Process="crystal"  Arguments="build RayTracer.cr -o RayTracer.exe --release" />
-            <Run   Process="RayTracer.exe"/>
+            <Platform Name="Windows">
+                <Build Process="crystal" Arguments="build RayTracer.cr -o RayTracer.exe --release" />
+                <Run Process="RayTracer.exe"/>
+            </Platform>
+            <Platform Name="Linux">
+                <Build Process="crystal" Arguments="build RayTracer.cr -o RayTracer --release" />
+                <Run Process="./RayTracer"/>
+            </Platform>
         </Command>
     </Project>    
 
     <Project Path="csharp" Language="C#">
         <Command Name="Default">
-            <Build Process="dotnet"  Arguments="build --configuration Release" />
-            <Run   Process=".\bin\Release\net5.0\RayTracer.exe"/>
+            <Platform Name="Windows">
+                <Build Process="dotnet" Arguments="build --configuration Release" />
+                <Run Process=".\bin\Release\net5.0\RayTracer.exe"/>
+            </Platform>
+            <Platform Name="Linux">
+                <Build Process="dotnet" Arguments="build --configuration Release" />
+                <Run Process="dotnet" Arguments="bin/Release/net5.0/RayTracer.dll"/>
+            </Platform>
         </Command>
     </Project>  
 
     <Project Path="fortran" Language="Fortran">
         <Command Name="Default">
-            <Build Process="gfortran"  Arguments="main.f95 -O3 -o RayTracer.exe" />
-            <Run   Process="RayTracer.exe"/>
+            <Platform Name="Windows">
+                <Build Process="gfortran" Arguments="main.f95 -O3 -o RayTracer.exe" />
+                <Run Process="RayTracer.exe"/>
+            </Platform>
+            <Platform Name="Linux">
+                <Build Process="gfortran" Arguments="main.f95 -O3 -o RayTracer" />
+                <Run Process="./RayTracer"/>
+            </Platform>
         </Command>
     </Project>        
 
     <Project Path="rust" Language="Rust">
         <Command Name="Default">
-            <Build Process="cargo"  Arguments="build --release" />
-            <Run   Process=".\target\release\ray_tracer.exe"/>
+            <Platform Name="Windows">
+                <Build Process="cargo" Arguments="build --release" />
+                <Run Process=".\target\release\ray_tracer.exe"/>
+            </Platform>
+            <Platform Name="Linux">
+                <Build Process="cargo" Arguments="build --release" />
+                <Run Process="./target/release/ray_tracer"/>
+            </Platform>
         </Command>
     </Project> 
 
     <Project Path="go" Language="Go">
         <Command Name="Default">
-            <Build Process="go"  Arguments="build -ldflags &quot;-s -w&quot; -o RayTracer.exe" />
-            <Run   Process="RayTracer.exe"/>
+            <Platform Name="Windows">
+                <Build Process="go" Arguments="build -ldflags &quot;-s -w&quot; -o RayTracer.exe" />
+                <Run Process="RayTracer.exe"/>
+            </Platform>
+            <Platform Name="Linux">
+                <Build Process="go" Arguments="build -ldflags &quot;-s -w&quot; -o RayTracer" />
+                <Run Process="./RayTracer"/>
+            </Platform>
         </Command>
     </Project>
 
     <Project Path="haskel" Language="Haskell">
         <Command Name="Default">
-            <Build Process="cmd" Arguments="/c ghc -O2 RayTracer.hs -o RayTracer.exe" />
-            <Run Process="RayTracer.exe" />
+            <Platform Name="Windows">
+                <Build Process="cmd" Arguments="/c ghc -O2 RayTracer.hs -o RayTracer.exe" />
+                <Run Process="RayTracer.exe" />
+            </Platform>
+            <Platform Name="Linux">
+                <Build Process="ghc" Arguments="-O2 RayTracer.hs -o RayTracer" />
+                <Run Process="./RayTracer" />
+            </Platform>
+        </Command>
+    </Project>
+
+    <Project Path="zig" Language="Zig">
+        <Command Name="Default">
+            <Platform Name="Windows">
+                <Build Process="cmd" Arguments="/c zig build --release=fast" />
+                <Run Process=".\zig-out\bin\RayTracer.exe" />
+            </Platform>
+            <Platform Name="Linux">
+                <Build Process="zig" Arguments="build --release=fast" />
+                <Run Process="./zig-out/bin/RayTracer" />
+            </Platform>
+        </Command>
+    </Project>
+
+    <Project Path="v" Language="V">
+        <Command Name="Default">
+            <Platform Name="Windows">
+                <Build Process="cmd" Arguments="/c v -prod -cc gcc -o RayTracer.exe RayTracer.v" />
+                <Run Process="RayTracer.exe" />
+            </Platform>
+            <Platform Name="Linux">
+                <Build Process="v" Arguments="-prod -cc gcc -o RayTracer RayTracer.v" />
+                <Run Process="./RayTracer" />
+            </Platform>
+        </Command>
+    </Project>
+
+    <Project Path="swift" Language="Swift">
+        <Command Name="Default">
+            <Platform Name="Windows">
+                <Build Process="cmd" Arguments="/c swiftc -sdk &quot;%LOCALAPPDATA%\Programs\Swift\Platforms\6.3.2\Windows.platform\Developer\SDKs\Windows.sdk&quot; -O RayTracer.swift -o RayTracer.exe" />
+                <Run Process="RayTracer.exe" />
+            </Platform>
+            <Platform Name="Linux">
+                <Build Process="swiftc" Arguments="-O RayTracer.swift -o RayTracer" />
+                <Run Process="./RayTracer" />
+            </Platform>
         </Command>
     </Project>
 </Projects>

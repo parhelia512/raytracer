@@ -1,12 +1,15 @@
-# Tools
+# Ray Tool
 
-To build tools on Windows install dotnet and build project in "tools" directory:
+The root `ray` wrapper is the default workflow for samples. It reads `projects.xml`, builds the selected sample, passes shared benchmark arguments, captures process timing and memory, and can compare output images.
+
+Per-language `run.bat` and `run.sh` scripts are intentionally not part of the workflow anymore. Keep build/run commands in `projects.xml` so local runs, CI, and Docker can use the same source of truth.
+
+To build the tool on Windows install dotnet and build the project:
 
 https://dotnet.microsoft.com/download/dotnet/5.0
 
 ```cmd
-    cd tools
-    dotnet build
+  dotnet build tools\Tools.csproj
 ```
 
 ## Compare image
@@ -21,7 +24,24 @@ https://dotnet.microsoft.com/download/dotnet/5.0
 
 ## Measure time
 
-Time command uses definitions from projects.xml file to build and run project.
+Time command uses definitions from `projects.xml` to build and run a project.
+
+Commands can be platform-specific. The runner picks the current OS first
+(`Windows`, `Linux`, or `OSX`), then falls back to `Any`, then finally to the
+old flat `Build`/`Run` shape if a command has not been migrated yet.
+
+```xml
+<Command Name="Default">
+  <Platform Name="Windows">
+    <Build Process="g++" Arguments="RayTracer.cpp -O2 -o RayTracer.exe" />
+    <Run Process="RayTracer.exe" />
+  </Platform>
+  <Platform Name="Linux">
+    <Build Process="g++" Arguments="RayTracer.cpp -O2 -o RayTracer" />
+    <Run Process="./RayTracer" />
+  </Platform>
+</Command>
+```
 
 ```cmd
   ray time --name php
@@ -40,6 +60,8 @@ The benchmark runner also accepts shared render settings and emits a stable summ
   ray time csharp --width 800 --height 600 --iterations 3
   ray time python --width 320 --height 240 --iterations 2 --format json
   ray time javascript --output render.bmp
+  ray time-all --width 320 --height 240 --iterations 2 --format text
+  ray time-all --width 320 --height 240 --iterations 2 --format json --timeout 60
 ```
 
 Supported runner options:
@@ -51,6 +73,10 @@ Supported runner options:
 | `--iterations` | `2` | Number of process runs. The first run is reported separately from warm runs. |
 | `--format` | `text` | Use `json` for machine-readable output. |
 | `--output` | empty | Optional bitmap path. The runner appends `-1`, `-2`, etc. per iteration. |
+
+`time-all` runs every project in `projects.xml`, continues after failures, and
+returns a non-zero exit code if any project fails or times out. Its `--timeout`
+option is per project and defaults to 60 seconds.
 
 Samples should accept `--width`, `--height`, and `--output`, then print one render line in this form:
 

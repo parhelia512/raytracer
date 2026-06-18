@@ -96,7 +96,7 @@ namespace Tools.Application
         private CommandAction FindCommand(object instance)
         {
             var methods = this.GetCommands(instance);
-            var method = methods.FirstOrDefault(m => string.Compare(m.Name, this.action, true) == 0);
+            var method = methods.FirstOrDefault(m => string.Compare(NormalizeCommandName(m.Name), NormalizeCommandName(this.action), true) == 0);
             var missingParams = new List<string>();
 
             if (method != null)
@@ -143,6 +143,11 @@ namespace Tools.Application
                 };
             }
             return null;
+        }
+
+        private static string NormalizeCommandName(string name)
+        {
+            return (name ?? "").Replace("-", "");
         }
     }
 }

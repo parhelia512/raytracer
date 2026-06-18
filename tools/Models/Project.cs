@@ -22,6 +22,17 @@ namespace Tools.Models
         public string Arguments { get; set; }
     }
 
+    [XmlRoot(ElementName = "Platform")]
+    public class Platform
+    {
+        [XmlElement(ElementName = "Build")]
+        public Build Build { get; set; }
+        [XmlElement(ElementName = "Run")]
+        public Run Run { get; set; }
+        [XmlAttribute(AttributeName = "Name")]
+        public string Name { get; set; }
+    }
+
     [XmlRoot(ElementName = "Command")]
     public class Command
     {
@@ -29,6 +40,8 @@ namespace Tools.Models
         public Build Build { get; set; }
         [XmlElement(ElementName = "Run")]
         public Run Run { get; set; }
+        [XmlElement(ElementName = "Platform")]
+        public List<Platform> Platforms { get; set; }
         [XmlAttribute(AttributeName = "Name")]
         public string Name { get; set; }
     }
@@ -55,7 +68,7 @@ namespace Tools.Models
     {
         public static ProjectCollection Load()
         {
-            using var fileStream = File.Open("projects.xml", FileMode.Open);
+            using var fileStream = new FileStream("projects.xml", FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             XmlSerializer serializer = new XmlSerializer(typeof(ProjectCollection));
             var document = (ProjectCollection)serializer.Deserialize(fileStream);
             return document;
