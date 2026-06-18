@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Tools.Application;
 using Tools.Models;
 
@@ -364,18 +365,45 @@ namespace Tools.Commands
 
         private static void PrintAllResult(AllBenchmarkResult result)
         {
-            Console.WriteLine($"benchmarks total={result.Total} ok={result.Ok} failed={result.Failed} timed_out={result.TimedOut} size={result.Width}x{result.Height} iterations={result.Iterations}");
+            Console.WriteLine($"Benchmark results: total={result.Total}, ok={result.Ok}, failed={result.Failed}, timed_out={result.TimedOut}, size={result.Width}x{result.Height}, iterations={result.Iterations}");
+            Console.WriteLine();
+            Console.WriteLine("| Rank | Language | Status | Render avg (ms) | Process avg (ms) | Peak memory (MB) | Error |");
+            Console.WriteLine("| ---: | --- | --- | ---: | ---: | ---: | --- |");
+
+            var rank = 1;
             foreach (var project in result.Projects)
             {
                 if (project.Benchmark != null)
                 {
-                    Console.WriteLine($"{project.Status} name={project.Name} language=\"{project.Language}\" first_ms={project.Benchmark.FirstRenderMs} warm_avg_ms={project.Benchmark.WarmAverageMs} peak_mb={project.Benchmark.PeakMemoryMb}");
+                    Console.WriteLine($"| {rank} | {EscapeTableCell(project.Language)} | {project.Status} | {FormatOptionalNumber(project.Benchmark.RenderWarmAverageMs)} | {project.Benchmark.WarmAverageMs:0.##} | {project.Benchmark.PeakMemoryMb:0.##} |  |");
+                    rank++;
                 }
                 else
                 {
-                    Console.WriteLine($"{project.Status} name={project.Name} language=\"{project.Language}\" error=\"{project.Error}\"");
+                    Console.WriteLine($"|  | {EscapeTableCell(project.Language)} | {project.Status} |  |  |  | {EscapeTableCell(project.Error)} |");
                 }
             }
+        }
+
+        private static string EscapeTableCell(string value)
+        {
+            return (value ?? "").Replace("|", "\\|").Replace("\r", " ").Replace("\n", " ");
+        }
+
+        private static string FormatOptionalNumber(double? value)
+        {
+            return value.HasValue ? value.Value.ToString("0.##") : "";
+        }
+
+        private static List<ProjectBenchmarkResult> SortBenchmarkResults(List<ProjectBenchmarkResult> projects)
+        {
+            return projects
+                .OrderBy(x => x.Benchmark == null ? 1 : 0)
+                .ThenBy(x => x.Benchmark?.RenderWarmAverageMs ?? x.Benchmark?.WarmAverageMs ?? double.MaxValue)
+                .ThenBy(x => x.Benchmark?.PeakMemoryMb ?? double.MaxValue)
+                .ThenBy(x => x.Benchmark?.WarmAverageMs ?? double.MaxValue)
+                .ThenBy(x => x.Language)
+                .ToList();
         }
 
         private static string BuildBenchmarkArguments(int width, int height, string output)
@@ -631,7 +659,7 @@ namespace Tools.Commands
                     Ok = projects.Count(x => x.Status == "ok"),
                     Failed = projects.Count(x => x.Status == "failed"),
                     TimedOut = projects.Count(x => x.Status == "timeout"),
-                    Projects = projects
+                    Projects = SortBenchmarkResults(projects)
                 };
             }
         }
@@ -645,10 +673,13 @@ namespace Tools.Commands
             public int Iterations { get; set; }
             public long FirstRenderMs { get; set; }
             public double WarmAverageMs { get; set; }
+            public double? RenderFirstMs { get; set; }
+            public double? RenderWarmAverageMs { get; set; }
             public long MinMs { get; set; }
             public long MaxMs { get; set; }
             public double PeakMemoryMb { get; set; }
             public long[] RunTimesMs { get; set; }
+            public double[] RenderTimesMs { get; set; }
             public int[] ExitCodes { get; set; }
             public string[] Stdout { get; set; }
             public string[] Stderr { get; set; }
@@ -657,6 +688,12 @@ namespace Tools.Commands
             {
                 var times = runs.Select(r => r.ElapsedMs).ToArray();
                 var warmTimes = times.Skip(1).DefaultIfEmpty(times[0]).ToArray();
+                var renderTimes = runs
+                    .Select(r => TryParseRenderTime(r.Stdout))
+                    .Where(t => t.HasValue)
+                    .Select(t => t.Value)
+                    .ToArray();
+                var warmRenderTimes = renderTimes.Skip(1).DefaultIfEmpty(renderTimes.FirstOrDefault()).ToArray();
 
                 return new BenchmarkResult
                 {
@@ -667,14 +704,33 @@ namespace Tools.Commands
                     Iterations = runs.Count,
                     FirstRenderMs = times[0],
                     WarmAverageMs = Math.Round(warmTimes.Average(), 2),
+                    RenderFirstMs = renderTimes.Length > 0 ? Math.Round(renderTimes[0], 2) : null,
+                    RenderWarmAverageMs = renderTimes.Length > 0 ? Math.Round(warmRenderTimes.Average(), 2) : null,
                     MinMs = times.Min(),
                     MaxMs = times.Max(),
                     PeakMemoryMb = Math.Round(runs.Max(r => r.PeakMemoryBytes) / 1000.0 / 1000.0, 2),
                     RunTimesMs = times,
+                    RenderTimesMs = renderTimes,
                     ExitCodes = runs.Select(r => r.ExitCode).ToArray(),
                     Stdout = runs.Select(r => r.Stdout).Where(s => !string.IsNullOrWhiteSpace(s)).ToArray(),
                     Stderr = runs.Select(r => r.Stderr).Where(s => !string.IsNullOrWhiteSpace(s)).ToArray()
                 };
+            }
+
+            private static double? TryParseRenderTime(string stdout)
+            {
+                if (string.IsNullOrWhiteSpace(stdout))
+                {
+                    return null;
+                }
+
+                var match = Regex.Match(stdout, @"render\s+time_ms=(?<time>(?:[0-9]+(?:\.[0-9]+)?)|(?:\.[0-9]+))");
+                if (!match.Success)
+                {
+                    return null;
+                }
+
+                return double.TryParse(match.Groups["time"].Value, out var time) ? time : null;
             }
         }
     }

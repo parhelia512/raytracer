@@ -76,7 +76,11 @@ Supported runner options:
 
 `time-all` runs every project in `projects.xml`, continues after failures, and
 returns a non-zero exit code if any project fails or times out. Its `--timeout`
-option is per project and defaults to 60 seconds.
+option is per project and defaults to 60 seconds. Text output is a Markdown
+table sorted best-to-worst by the sample-reported warm render time, then peak
+memory, so it can be copied into the README. Process timing is still included
+as a separate column to show startup/runtime overhead. The text table displays
+language names; JSON keeps project folder names for automation.
 
 Samples should accept `--width`, `--height`, and `--output`, then print one render line in this form:
 
