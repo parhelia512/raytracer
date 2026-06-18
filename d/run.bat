@@ -1,1 +1,0 @@
-dmd RayTracer.d -m64 -O -inline -release -noboundscheck && RayTracer.exe

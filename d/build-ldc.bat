@@ -1,1 +1,0 @@
-C:\Bin\ldc2\bin\ldc2.exe RayTracer.d -O2
